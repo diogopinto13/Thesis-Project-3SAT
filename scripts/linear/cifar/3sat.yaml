@@ -11,7 +11,7 @@ hydra:
     dir: .
 
 name: "3sat-cifar10-linear"
-pretrained_feature_extractor: "/home/trained_models/3sat/0/3sat-cifar10-0-ep=0.ckpt"
+pretrained_feature_extractor: "trained_models/3sat/9/3sat-cifar10-9-ep=19.ckpt"
 backbone:
   name: "resnet18"
 pretrain_method: "3sat"
@@ -38,7 +38,7 @@ checkpoint:
 auto_resume:
   enabled: False
 finetune: True
-adversarial: False
+adversarial: True
 
 # overwrite PL stuff
 max_epochs: 25

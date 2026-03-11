@@ -49,13 +49,13 @@ auto_resume:
   enabled: False
 adv:
   num_clusters: 10
-  warm_up_stage: 300
+  warm_up_stage: 5 #300
   mixup_alpha: 0.5
 # knn_eval:
 #   enabled: True
 
 # overwrite PL stuff
-max_epochs: 1000
+max_epochs: 20 #1000
 devices: [0]
 sync_batchnorm: True
 accelerator: "gpu"

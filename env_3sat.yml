@@ -1,0 +1,37 @@
+name: 3sat
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - scipy
+  - h5py
+  - pillow
+  - tqdm
+  - scikit-learn
+  - pyyaml
+  - timm
+  - torchvision
+  - torchaudio
+  # Install PyTorch and CUDA toolkit via the pytorch + nvidia channels.
+  - pytorch
+  - pytorch-cuda=11.8
+
+  - pip:
+    - pytorch-lightning
+    - wandb
+    - hydra-core
+    - omegaconf
+    - einops
+    - tensorboard
+    - torchmetrics
+    - timm
+
+# Notes:
+# - This file prefers the official `pytorch` + `nvidia` channels for CUDA-enabled
+#   PyTorch installs. If your system CUDA differs, adjust `pytorch-cuda` accordingly
+#   (for example, `pytorch-cuda=12.1`), or remove it to use CPU-only PyTorch.
