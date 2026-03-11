@@ -163,7 +163,7 @@ class SAT(BaseMethod):
         for i in range(iters):
  
             z_adv = self.adv_forward(images + delta)
-            z_orig = self.adv_forward(original_images)
+            z_orig = self.forward(original_images)["z"].detach()
             
             self.backbone.zero_grad()
             self.projector.zero_grad()
