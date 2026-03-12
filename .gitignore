@@ -18,3 +18,4 @@ dist/
 *.pyc
 
 *.ckpt
+/benchmark_logs

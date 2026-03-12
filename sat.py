@@ -184,7 +184,7 @@ class SAT(BaseMethod):
         if self.current_epoch < self.warm_up_stage:
             return 0.0
 
-        denom = max(1, self.n_epochs - self.warm_up_stage)
+        denom = max(1, self.current_epoch - self.warm_up_stage)
         weight = min(1.0, (self.current_epoch - self.warm_up_stage) / denom)
 
         return weight
