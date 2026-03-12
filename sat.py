@@ -148,43 +148,46 @@ class SAT(BaseMethod):
         feats = self.backbone(X)
         z = self.projector(feats)
         return z
-
-    def pgd_attack(self,inputs, eps=8. / 255., alpha=2. / 255., iters=5, randomInit=True):
-        loss = barlow_loss_func
-        images = inputs.detach()
-        original_images = images.clone().detach()
-        # init
+    
+    def pgd_attack(self, inputs:torch.Tensor, eps=8. / 255., alpha=2. / 255., iters=5, randomInit=True):
+        x_orig = inputs.clone().detach()
+        x_adv = x_orig.clone().detach()
+        
+        self.backbone.eval()
+        self.projector.eval()
+        
         if randomInit:
-            delta = torch.rand_like(images) * eps * 2 - eps
-        else:
-            delta = torch.zeros_like(images)
-        delta = torch.nn.Parameter(delta, requires_grad=True)
-
-        for i in range(iters):
- 
-            z_adv = self.adv_forward(images + delta)
-            z_orig = self.forward(original_images)["z"].detach()
-            
-            self.backbone.zero_grad()
-            self.projector.zero_grad()
-            cost = loss(z_adv, z_orig.detach(), lamb=self.lamb, scale_loss=self.scale_loss)
-            # cost.backward()
-            delta_grad = torch.autograd.grad(cost, [delta])[0]
-
-            delta.data = delta.data + alpha * delta_grad.sign()
-            delta.grad = None
-            delta.data = torch.clamp(delta.data, min=-eps, max=eps)
-            delta.data = torch.clamp(images + delta.data, min=0, max=1) - images
-
-        self.backbone.zero_grad()
-        self.projector.zero_grad()
-
-        return (images + delta).detach()
+            x_adv = x_adv + torch.empty_like(x_adv).uniform_(-eps, eps)
+            x_adv = x_adv.clamp(0.0, 1.0)
+        
+        for _ in range(iters):
+            x_adv.requires_grad_(True)
+            with torch.enable_grad():
+                z_adv = self.adv_forward(x_adv)
+                with torch.no_grad():
+                    z_orig = self.forward(x_orig)["z"].detach()
+                adv_loss = barlow_loss_func(z_adv, z_orig, lamb=self.lamb, scale_loss=self.scale_loss)
+            grad = torch.autograd.grad(adv_loss, x_adv, only_inputs=True)[0]
+            x_adv = x_adv.detach() + alpha * grad.sign()
+            perturbation = torch.clamp(x_adv - x_orig, min=-eps, max=eps)
+            x_adv = torch.clamp(x_orig + perturbation, min=0.0, max=1.0).detach()
+        
+        self.backbone.train()
+        self.projector.train()
+        
+        return x_adv
     
     def weight_adv(self):
-        w = min(1.0,  self.current_epoch // self.warm_up_stage ) * ((self.current_epoch -self.warm_up_stage ) / (self.max_epochs -self.warm_up_stage ) )
-        self.log("weight_adv",w)
-        return w
+        if self.warm_up_stage <= 0:
+            return 1.0
+
+        if self.current_epoch < self.warm_up_stage:
+            return 0.0
+
+        denom = max(1, self.n_epochs - self.warm_up_stage)
+        weight = min(1.0, (self.current_epoch - self.warm_up_stage) / denom)
+
+        return weight
     
     def exp_weight_schedule(self,current_epoch, max_epochs=1000,a = 2):
         """
