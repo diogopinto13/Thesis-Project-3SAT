@@ -62,7 +62,7 @@ class SAT(BaseMethod):
         self.mixup_alpha = cfg.adv.mixup_alpha
         self.cluster_centers:torch.Tensor= None
 
-        self.pseudo_classifier: nn.Module = nn.Linear(self.features_dim, self.num_clusters)
+        #self.pseudo_classifier: nn.Module = nn.Linear(self.features_dim, self.num_clusters)
         
         # projector
         self.projector = nn.Sequential(
