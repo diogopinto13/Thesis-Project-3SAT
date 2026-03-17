@@ -52,9 +52,6 @@ else:
 
 @hydra.main(version_base="1.2")
 def main(cfg: DictConfig):
-    # hydra doesn't allow us to add new keys for "safety"
-    # set_struct(..., False) disables this behavior and allows us to add more parameters
-    # without making the user specify every single thing about the model
     OmegaConf.set_struct(cfg, False)
     cfg = parse_cfg(cfg)
 
@@ -69,23 +66,7 @@ def main(cfg: DictConfig):
         if cifar:
             backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
             backbone.maxpool = nn.Identity()
-
-    ckpt_path = cfg.pretrained_feature_extractor
-    assert ckpt_path.endswith(".ckpt") or ckpt_path.endswith(".pth") or ckpt_path.endswith(".pt")
-
-    state = torch.load(ckpt_path, map_location="cpu")["state_dict"]
-    for k in list(state.keys()):
-        if "encoder" in k:
-            state[k.replace("encoder", "backbone")] = state[k]
-            logging.warn(
-                "You are using an older checkpoint. Use a new one as some issues might arrise."
-            )
-        if "backbone" in k:
-            state[k.replace("backbone.", "")] = state[k]
-        del state[k]
-    backbone.load_state_dict(state, strict=False)
-    logging.info(f"Loaded {ckpt_path}")
-
+    
     # check if mixup or cutmix is enabled
     mixup_func = None
     mixup_active = cfg.mixup > 0 or cfg.cutmix > 0
@@ -114,6 +95,7 @@ def main(cfg: DictConfig):
     if not cfg.performance.disable_channel_last:
         model = model.to(memory_format=torch.channels_last)
 
+    
     if cfg.data.format == "dali":
         val_data_format = "image_folder"
     else:
@@ -246,6 +228,8 @@ def main(cfg: DictConfig):
         trainer.fit(model, ckpt_path=ckpt_path, datamodule=dali_datamodule)
     else:
         trainer.fit(model, train_loader, val_loader, ckpt_path=ckpt_path)
+
+    #trainer.fit(model, train_loader, val_loader, ckpt_path=ckpt_path)
 
 
 if __name__ == "__main__":

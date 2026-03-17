@@ -30,6 +30,7 @@ dependencies:
     - tensorboard
     - torchmetrics
     - timm
+    - git+https://github.com/fra31/auto-attack
 
 # Notes:
 # - This file prefers the official `pytorch` + `nvidia` channels for CUDA-enabled

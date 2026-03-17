@@ -11,7 +11,7 @@ hydra:
     dir: .
 
 name: "3sat-cifar10-linear"
-pretrained_feature_extractor: "trained_models/linear/1/3sat-cifar10-linear-1-ep=24.ckpt"
+pretrained_feature_extractor: "trained_models/linear/8/3sat-cifar10-linear-8-ep=24.ckpt"
 backbone:
   name: "resnet18"
 pretrain_method: "3sat"
