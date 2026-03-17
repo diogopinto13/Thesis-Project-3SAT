@@ -379,8 +379,8 @@ class LinearModel(pl.LightningModule):
         X, targets = batch
         if self.adversarial is True:
             # loss = self.trades_loss(X,targets,optimizer = self.optimizers())['loss']
-            X_adv = self.pgd_attack_bk(X, targets, eps=8. / 255.,
-                                      alpha=2. / 255, iters=20, forceEval=True)
+            X_adv = self.pgd_attack_downstream(X, targets, epsilon=8. / 255.,
+                                      alpha=2. / 255, steps=10)
             loss_adv = self.train_step(X_adv,targets)
             # loss_adv = 0
             loss_natural = self.train_step(X,targets)
@@ -556,3 +556,40 @@ class LinearModel(pl.LightningModule):
         self.zero_grad()
 
         return (images + delta).detach()
+
+    def pgd_attack_downstream(
+            self,
+            inputs: torch.Tensor,
+            targets: torch.Tensor,
+            epsilon: float = 8. / 255.,
+            alpha: float = 2. / 255.,
+            steps: int = 20
+    ) -> torch.Tensor:
+
+        x_orig = inputs.clone().detach()
+
+        # random start inside epsilon-ball
+        x_adv = x_orig.clone().detach()
+        x_adv = x_adv + torch.empty_like(x_adv).uniform_(-epsilon, epsilon)
+        x_adv = torch.clamp(x_adv, 0.0, 1.0)
+
+        self.eval()
+
+        for _ in range(steps):
+            x_adv.requires_grad_(True)
+
+            with torch.enable_grad():
+                logits = self.pgd_forward(x_adv)
+                loss = self.loss_func(logits, targets)
+
+            grad = torch.autograd.grad(loss, x_adv, only_inputs=True)[0]
+
+            # PGD step
+            x_adv = x_adv.detach() + alpha * grad.sign()
+
+            # project back to epsilon ball
+            perturbation = torch.clamp(x_adv - x_orig, min=-epsilon, max=epsilon)
+            x_adv = torch.clamp(x_orig + perturbation, min=0.0, max=1.0).detach()
+        
+        self.train()
+        return x_adv
