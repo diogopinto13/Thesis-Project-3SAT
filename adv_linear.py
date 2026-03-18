@@ -380,7 +380,7 @@ class LinearModel(pl.LightningModule):
         if self.adversarial is True:
             # loss = self.trades_loss(X,targets,optimizer = self.optimizers())['loss']
             X_adv = self.pgd_attack_downstream(X, targets, epsilon=8. / 255.,
-                                      alpha=2. / 255, steps=10)
+                                      alpha=2. / 255, steps=20)
             loss_adv = self.train_step(X_adv,targets)
             # loss_adv = 0
             loss_natural = self.train_step(X,targets)
