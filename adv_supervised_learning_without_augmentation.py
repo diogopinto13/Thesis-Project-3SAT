@@ -1,24 +1,4 @@
-# Copyright 2023 solo-learn development team.
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
-# Software, and to permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies
-# or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-# PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
-# FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-
 import inspect
-import logging
 import os
 
 import hydra
@@ -30,8 +10,6 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.strategies.ddp import DDPStrategy
-from timm.data.mixup import Mixup
-from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 
 from solo.args.linear import parse_cfg
 from solo.data.classification_dataloader import prepare_data
@@ -41,14 +19,6 @@ from adv_linear  import LinearModel
 from solo.utils.auto_resumer import AutoResumer
 from solo.utils.checkpointer import Checkpointer
 from solo.utils.misc import make_contiguous
-
-try:
-    from solo.data.dali_dataloader import ClassificationDALIDataModule
-except ImportError:
-    _dali_avaliable = False
-else:
-    _dali_avaliable = True
-
 
 @hydra.main(version_base="1.2")
 def main(cfg: DictConfig):
@@ -68,38 +38,16 @@ def main(cfg: DictConfig):
             backbone.maxpool = nn.Identity()
     
     # check if mixup or cutmix is enabled
-    mixup_func = None
-    mixup_active = cfg.mixup > 0 or cfg.cutmix > 0
-    if mixup_active:
-        logging.info("Mixup activated")
-        mixup_func = Mixup(
-            mixup_alpha=cfg.mixup,
-            cutmix_alpha=cfg.cutmix,
-            cutmix_minmax=None,
-            prob=1.0,
-            switch_prob=0.5,
-            mode="batch",
-            label_smoothing=cfg.label_smoothing,
-            num_classes=cfg.data.num_classes,
-        )
-        # smoothing is handled with mixup label transform
-        loss_func = SoftTargetCrossEntropy()
-    elif cfg.label_smoothing > 0:
-        loss_func = LabelSmoothingCrossEntropy(smoothing=cfg.label_smoothing)
-    else:
-        loss_func = torch.nn.CrossEntropyLoss()
+    loss_func = torch.nn.CrossEntropyLoss()
 
-    model = LinearModel(backbone, loss_func=loss_func, mixup_func=mixup_func, cfg=cfg)
+    model = LinearModel(backbone, loss_func=loss_func, mixup_func=None, cfg=cfg)
     make_contiguous(model)
     # can provide up to ~20% speed up
     if not cfg.performance.disable_channel_last:
         model = model.to(memory_format=torch.channels_last)
 
     
-    if cfg.data.format == "dali":
-        val_data_format = "image_folder"
-    else:
-        val_data_format = cfg.data.format
+    val_data_format = cfg.data.format
 
     train_loader, val_loader = prepare_data(
         cfg.data.dataset,
@@ -108,29 +56,9 @@ def main(cfg: DictConfig):
         data_format=val_data_format,
         batch_size=cfg.optimizer.batch_size,
         num_workers=cfg.data.num_workers,
-        auto_augment=cfg.auto_augment,
+        auto_augment=False,
         data_fraction=cfg.data.fraction
     )
-
-    if cfg.data.format == "dali":
-        assert (
-            _dali_avaliable
-        ), "Dali is not currently avaiable, please install it first with pip3 install .[dali]."
-
-        assert not cfg.auto_augment, "Auto augmentation is not supported with Dali."
-
-        dali_datamodule = ClassificationDALIDataModule(
-            dataset=cfg.data.dataset,
-            train_data_path=cfg.data.train_path,
-            val_data_path=cfg.data.val_path,
-            num_workers=cfg.data.num_workers,
-            batch_size=cfg.optimizer.batch_size,
-            data_fraction=cfg.data.fraction,
-            dali_device=cfg.dali.device,
-        )
-
-        # use normal torchvision dataloader for validation to save memory
-        dali_datamodule.val_dataloader = lambda: val_loader
 
     # 1.7 will deprecate resume_from_checkpoint, but for the moment
     # the argument is the same, but we need to pass it as ckpt_path to trainer.fit
@@ -224,12 +152,8 @@ def main(cfg: DictConfig):
     except:
         pass
 
-    if cfg.data.format == "dali":
-        trainer.fit(model, ckpt_path=ckpt_path, datamodule=dali_datamodule)
-    else:
-        trainer.fit(model, train_loader, val_loader, ckpt_path=ckpt_path)
 
-    #trainer.fit(model, train_loader, val_loader, ckpt_path=ckpt_path)
+    trainer.fit(model, train_loader, val_loader, ckpt_path=ckpt_path)
 
 
 if __name__ == "__main__":
