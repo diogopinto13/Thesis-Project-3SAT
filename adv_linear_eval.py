@@ -57,6 +57,7 @@ def main(cfg: DictConfig):
     # without making the user specify every single thing about the model
     OmegaConf.set_struct(cfg, False)
     cfg = parse_cfg(cfg)
+    print("Using the follwoing configurations for training:", cfg)
 
     backbone_model = BaseMethod._BACKBONES[cfg.backbone.name]
 
@@ -90,7 +91,7 @@ def main(cfg: DictConfig):
     mixup_func = None
     mixup_active = cfg.mixup > 0 or cfg.cutmix > 0
     if mixup_active:
-        logging.info("Mixup activated")
+        print("Mixup activated")
         mixup_func = Mixup(
             mixup_alpha=cfg.mixup,
             cutmix_alpha=cfg.cutmix,
@@ -136,7 +137,7 @@ def main(cfg: DictConfig):
         ), "Dali is not currently avaiable, please install it first with pip3 install .[dali]."
 
         assert not cfg.auto_augment, "Auto augmentation is not supported with Dali."
-
+        print("Using Dali dataloader for training.")
         dali_datamodule = ClassificationDALIDataModule(
             dataset=cfg.data.dataset,
             train_data_path=cfg.data.train_path,

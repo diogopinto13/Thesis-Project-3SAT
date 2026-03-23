@@ -55,6 +55,7 @@ def main(cfg: DictConfig):
     OmegaConf.set_struct(cfg, False)
     cfg = parse_cfg(cfg)
 
+    print("Training with the following config:", cfg)
     backbone_model = BaseMethod._BACKBONES[cfg.backbone.name]
 
     # initialize backbone
@@ -71,7 +72,7 @@ def main(cfg: DictConfig):
     mixup_func = None
     mixup_active = cfg.mixup > 0 or cfg.cutmix > 0
     if mixup_active:
-        logging.info("Mixup activated")
+        print("Mixup activated")
         mixup_func = Mixup(
             mixup_alpha=cfg.mixup,
             cutmix_alpha=cfg.cutmix,
@@ -113,12 +114,13 @@ def main(cfg: DictConfig):
     )
 
     if cfg.data.format == "dali":
+        print("Using Dali dataloader for training.")
         assert (
             _dali_avaliable
         ), "Dali is not currently avaiable, please install it first with pip3 install .[dali]."
 
         assert not cfg.auto_augment, "Auto augmentation is not supported with Dali."
-
+        
         dali_datamodule = ClassificationDALIDataModule(
             dataset=cfg.data.dataset,
             train_data_path=cfg.data.train_path,
@@ -128,7 +130,6 @@ def main(cfg: DictConfig):
             data_fraction=cfg.data.fraction,
             dali_device=cfg.dali.device,
         )
-
         # use normal torchvision dataloader for validation to save memory
         dali_datamodule.val_dataloader = lambda: val_loader
 
