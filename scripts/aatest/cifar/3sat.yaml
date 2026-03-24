@@ -22,10 +22,10 @@ data:
   format: "image_folder"
   num_workers: 4
 optimizer:
-  name: "sgd"
+  name: "adamw"
   batch_size: 256
-  lr: 0.1
-  weight_decay: 0
+  lr: 0.001
+  weight_decay: 0.000001
 scheduler:
   name: "step"
   lr_decay_steps: [10, 20]

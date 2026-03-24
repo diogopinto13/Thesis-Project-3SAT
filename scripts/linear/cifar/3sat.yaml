@@ -21,13 +21,13 @@ data:
   val_path: "./datasets/cifar-10"
   format: "image_folder"
   num_workers: 4
-  # fraction: 0.1
+  fraction: 0.8
 optimizer:
-  name: "sgd"
+  name: "adamw"
   # batch_size: 16
   batch_size: 256
-  lr: 0.1
-  weight_decay: 0
+  lr: 0.001
+  weight_decay: 0.000001
 scheduler:
   name: "step"
   lr_decay_steps: [10, 20]
@@ -41,7 +41,7 @@ finetune: True
 adversarial: True
 
 # overwrite PL stuff
-max_epochs: 25
+max_epochs: 30
 devices: [0]
 sync_batchnorm: True
 accelerator: "gpu"
