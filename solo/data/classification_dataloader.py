@@ -93,13 +93,13 @@ def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
                 ),
                 transforms.RandomGrayscale(p=0.2),
                 transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
             ]
         ),
         "T_val": transforms.Compose(
             [
                 transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
             ]
         ),
     }
@@ -110,14 +110,14 @@ def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
                 transforms.RandomResizedCrop(size=96, scale=(0.08, 1.0)),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4823, 0.4466), (0.247, 0.243, 0.261)),
+                transforms.Normalize((0.4914, 0.4823, 0.4466), (0.2023, 0.1994, 0.2010)),
             ]
         ),
         "T_val": transforms.Compose(
             [
                 transforms.Resize((96, 96)),
                 transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4823, 0.4466), (0.247, 0.243, 0.261)),
+                transforms.Normalize((0.4914, 0.4823, 0.4466), (0.2023, 0.1994, 0.2010)),
             ]
         ),
     }
