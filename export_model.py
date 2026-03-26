@@ -244,6 +244,20 @@ def main(cfg: DictConfig):
     OmegaConf.set_struct(cfg, False)
     cfg = parse_cfg(cfg)
 
+    pth_output_path = omegaconf_select(cfg, "export.pth_output_path", "model_full.pth")
+    torchscript_output_path = omegaconf_select(
+        cfg,
+        "export.torchscript_output_path",
+        "3sat_full_adv_model.pt",
+    )
+
+    pth_output_dir = os.path.dirname(pth_output_path)
+    if pth_output_dir:
+        os.makedirs(pth_output_dir, exist_ok=True)
+    torchscript_output_dir = os.path.dirname(torchscript_output_path)
+    if torchscript_output_dir:
+        os.makedirs(torchscript_output_dir, exist_ok=True)
+
     backbone_model = BaseMethod._BACKBONES[cfg.backbone.name]
 
     # initialize backbone
@@ -301,8 +315,8 @@ def main(cfg: DictConfig):
     try:
         # save a CPU deepcopy so we don't move the tracing wrapper off-device
         cpu_wrapper = copy.deepcopy(model).cpu()
-        torch.save(cpu_wrapper, "model_full.pth")
-        logging.info("Saved pickled model as model_full.pth")
+        torch.save(cpu_wrapper, pth_output_path)
+        logging.info(f"Saved pickled model as {pth_output_path}")
     except Exception:
         logging.warning("Failed to save pickled model; continuing to TorchScript export")
 
@@ -311,8 +325,8 @@ def main(cfg: DictConfig):
     with torch.no_grad():
         traced = torch.jit.trace(model, example)
     traced = traced.cpu()
-    torch.jit.save(traced, "3sat_full_adv_model.pt")
-    logging.info("Saved TorchScript model as 3sat_full_adv_model.pt")
+    torch.jit.save(traced, torchscript_output_path)
+    logging.info(f"Saved TorchScript model as {torchscript_output_path}")
 
 if __name__ == "__main__":
     main()

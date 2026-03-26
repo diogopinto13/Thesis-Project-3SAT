@@ -30,6 +30,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.strategies.ddp import DDPStrategy
+from pytorch_lightning import Trainer, seed_everything
 from timm.data.mixup import Mixup
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 
@@ -58,6 +59,8 @@ def main(cfg: DictConfig):
     OmegaConf.set_struct(cfg, False)
     cfg = parse_cfg(cfg)
     print("Using the follwoing configurations for training:", cfg)
+
+    seed_everything(cfg.seed)
 
     backbone_model = BaseMethod._BACKBONES[cfg.backbone.name]
 

@@ -19,3 +19,7 @@ dist/
 
 *.ckpt
 /benchmark_logs
+
+/trained_models
+/outputs
+solo/__pycache__/
