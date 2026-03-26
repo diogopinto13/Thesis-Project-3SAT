@@ -1,5 +1,6 @@
 import os
 import subprocess
+import shlex
 import glob
 import time
 import enum
@@ -19,6 +20,12 @@ class VariationsStage(enum.Enum):
     DOWNSTREAM_ADVERSARIAL_FROZEN = ["finetune=False", "adversarial=True"]
     DOWNSTREAM_ADVERSARIAL_FINETUNE = ["finetune=True", "adversarial=True"]
 
+EXPERIMENTS_ROOT = "experiments"
+DEFAULT_CONFIG_PATH = "scripts/linear/cifar"
+DEFAULT_CONFIG_NAME = "3sat.yaml"
+PRETRAIN_CONFIG_PATH = "scripts/pretrain/cifar"
+PRETRAIN_CONFIG_NAME = "3sat.yaml"
+
 def find_latest_checkpoint(pattern: str, created_after: Optional[float] = None) -> Optional[str]:
     candidates = [p for p in glob.glob(pattern, recursive=True) if os.path.isfile(p)]
     if not candidates:
@@ -37,51 +44,176 @@ def run_command(command: str):
         process = subprocess.Popen(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
-        stderr = process.stderr.read()
+        stdout, stderr = process.communicate()
+        if stdout:
+            print(stdout.decode().strip())
         if stderr:
             print(stderr.decode().strip())
-        
+
         if process.returncode != 0:
-            raise Exception(f"Command failed with return code {process.returncode}: {command}")
+            raise Exception(
+                f"Command failed with return code {process.returncode}: {command}"
+            )
     except Exception as e:
         print(f"An error occurred while running command: {command}\nError: {e}")
         raise Exception(e)
 
+
+def ensure_dir(path: str):
+    os.makedirs(path, exist_ok=True)
+
+
+def build_export_paths(stage_dir: str) -> tuple[str, str]:
+    pth_output_path = os.path.join(stage_dir, "model_full.pth")
+    torchscript_output_path = os.path.join(stage_dir, "model_full.pt")
+    return pth_output_path, torchscript_output_path
+
+
+def quote_arg(value: str) -> str:
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace("=", "\\=")
+        .replace(":", "\\:")
+        .replace(",", "\\,")
+    )
+    return "'" + escaped.replace("'", "'\"'\"'") + "'"
+
 def run_ssl_pipeline(seeds: list[int]):
     try:
-        #to avoid training the backbone multiple times with the same configuration since we only change the downstream
-        for seed in seeds:
-            print(f"Training backbone with seed: {seed} / {len(seeds)}")
-            run_command(f"python3.10 {SSLStage.PRETRAIN.value} --config-path --config-path scripts/pretrain/cifar --config-name 3sat.yaml --seed={seed}")
+        # to avoid training the backbone multiple times with the same configuration
+        for pretrain_seed in seeds:
+            print(f"Training backbone with seed: {pretrain_seed} / {len(seeds)}")
+            pretrain_start = time.time()
+            run_command(
+                " ".join(
+                    [
+                        "python3.10",
+                        SSLStage.PRETRAIN.value,
+                        "--config-path",
+                        PRETRAIN_CONFIG_PATH,
+                        "--config-name",
+                        PRETRAIN_CONFIG_NAME,
+                        f"seed={pretrain_seed}",
+                    ]
+                )
+            )
+
+            pretrain_ckpt = find_latest_checkpoint(
+                "trained_models/**/*.ckpt", created_after=pretrain_start
+            )
+            if not pretrain_ckpt:
+                raise Exception("No pretrain checkpoint found after pretraining stage.")
+
             for variation in VariationsStage:
+                variation_slug = variation.name.lower()
                 print(f"Running variation: {variation.name}")
-                #for each fixed backbone, we run the downstream with different settings for different seeds
-                for seed in seeds:
-                    print(f"Running seed: {seed} / {len(seeds)}")
-                    #override configs for the downstream stage
-                    config_args = " ".join([f"--{arg}" for arg in variation.value])
-                    run_command(f"python3.10 {SSLStage.LINEAR_EVAL.value} --config-path --config-path scripts/linear/cifar --config-name 3sat.yaml --seed={seed} {config_args}")
-                    config_args += (f" --save_name={variation.name}_seed_{seed}" + f"--checkpoint_path=checkpoints/pretrain/cifar/3sat/")
-                    run_command(f"python3.10 {SSLStage.EXPORT.value} --config-path --config-path scripts/export/cifar --config-name 3sat.yaml --seed={seed} {config_args}")
+                # for each fixed backbone, we run the downstream with different seeds
+                for downstream_seed in seeds:
+                    print(f"Running seed: {downstream_seed} / {len(seeds)}")
+                    config_args = " ".join(variation.value)
+                    downstream_start = time.time()
+                    run_command(
+                        " ".join(
+                            [
+                                "python3.10",
+                                SSLStage.LINEAR_EVAL.value,
+                                "--config-path",
+                                DEFAULT_CONFIG_PATH,
+                                "--config-name",
+                                DEFAULT_CONFIG_NAME,
+                                f"seed={downstream_seed}",
+                                f"pretrained_feature_extractor={quote_arg(pretrain_ckpt)}",
+                                config_args,
+                            ]
+                        )
+                    )
+
+                    downstream_ckpt = find_latest_checkpoint(
+                        "trained_models/**/*.ckpt", created_after=downstream_start
+                    )
+                    if not downstream_ckpt:
+                        raise Exception("No downstream checkpoint found after linear eval.")
+
+                    export_dir = os.path.join(
+                        EXPERIMENTS_ROOT,
+                        "ssl",
+                        variation_slug,
+                        f"seed{downstream_seed}",
+                    )
+                    ensure_dir(export_dir)
+                    pth_output_path, torchscript_output_path = build_export_paths(export_dir)
+
+                    run_command(
+                        " ".join(
+                            [
+                                "python3.10",
+                                SSLStage.EXPORT.value,
+                                "--config-path",
+                                DEFAULT_CONFIG_PATH,
+                                "--config-name",
+                                DEFAULT_CONFIG_NAME,
+                                f"seed={downstream_seed}",
+                                f"pretrained_feature_extractor={quote_arg(downstream_ckpt)}",
+                                f"+export.pth_output_path={quote_arg(pth_output_path)}",
+                                f"+export.torchscript_output_path={quote_arg(torchscript_output_path)}",
+                            ]
+                        )
+                    )
     except Exception as e:
         print(f"An error occurred on run_ssl_pipeline: {e}")
         raise Exception(e)
 
 def run_supervised_pipeline(seeds: list[int]):
     try:
-        for stage in SupervisedStage:
-            print(f"Running stage: {stage.name}")
-            for seed in seeds:
-                print(f"Running seed: {seed} / {len(seeds)}")
-                config_args = f"--seed={seed} --save_name={stage.name}_seed_{seed}"
-                command = f"python3.10 {stage.value} --config-path --config-path scripts/linear/cifar --config-name 3sat.yaml {config_args}"
-                run_command(command)
+        for seed in seeds:
+            print(f"Running seed: {seed} / {len(seeds)}")
+            train_start = time.time()
+            run_command(
+                " ".join(
+                    [
+                        "python3.10",
+                        SupervisedStage.TRAIN.value,
+                        "--config-path",
+                        DEFAULT_CONFIG_PATH,
+                        "--config-name",
+                        DEFAULT_CONFIG_NAME,
+                        f"seed={seed}",
+                    ]
+                )
+            )
+
+            train_ckpt = find_latest_checkpoint(
+                "trained_models/**/*.ckpt", created_after=train_start
+            )
+            if not train_ckpt:
+                raise Exception("No supervised checkpoint found after training stage.")
+
+            export_dir = os.path.join(EXPERIMENTS_ROOT, "supervised", f"seed{seed}")
+            ensure_dir(export_dir)
+            pth_output_path, torchscript_output_path = build_export_paths(export_dir)
+
+            run_command(
+                " ".join(
+                    [
+                        "python3.10",
+                        SupervisedStage.EXPORT.value,
+                        "--config-path",
+                        DEFAULT_CONFIG_PATH,
+                        "--config-name",
+                        DEFAULT_CONFIG_NAME,
+                        f"seed={seed}",
+                        f"pretrained_feature_extractor={quote_arg(train_ckpt)}",
+                        f"+export.pth_output_path={quote_arg(pth_output_path)}",
+                        f"+export.torchscript_output_path={quote_arg(torchscript_output_path)}",
+                    ]
+                )
+            )
     except Exception as e:
         print(f"An error occurred on run_supervised_pipeline: {e}")
         raise Exception(e)
 
 def main():
-    seeds = [0, 1, 2, 3, 4]
+    seeds = [0,1] #[0, 1, 2, 3, 4]
     print("Starting the pipeline...")
     print("Running self-supervised learning stage...")
     run_ssl_pipeline(seeds)

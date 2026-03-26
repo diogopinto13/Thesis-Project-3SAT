@@ -41,9 +41,10 @@ finetune: True
 adversarial: True
 
 # overwrite PL stuff
-max_epochs: 30
+max_epochs: 1 #30
 devices: [0]
 sync_batchnorm: True
 accelerator: "gpu"
 strategy: "ddp"
 precision: 16
+seed: 0

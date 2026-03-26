@@ -44,3 +44,4 @@ sync_batchnorm: True
 accelerator: "gpu"
 strategy: "ddp"
 precision: 16
+seed: 0

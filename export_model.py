@@ -202,6 +202,7 @@ from solo.methods.base import BaseMethod
 from solo.utils.misc import make_contiguous
 
 import pytorch_lightning as pl
+from pytorch_lightning import Trainer, seed_everything
 import omegaconf
 from solo.utils.misc import  omegaconf_select
 
@@ -244,6 +245,7 @@ def main(cfg: DictConfig):
     OmegaConf.set_struct(cfg, False)
     cfg = parse_cfg(cfg)
 
+    seed_everything(cfg.seed)
     pth_output_path = omegaconf_select(cfg, "export.pth_output_path", "model_full.pth")
     torchscript_output_path = omegaconf_select(
         cfg,
