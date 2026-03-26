@@ -136,6 +136,7 @@ def run_ssl_pipeline(seeds: list[int]):
 
                     export_dir = os.path.join(
                         EXPERIMENTS_ROOT,
+                        f"backbone_seed{pretrain_seed}",
                         "ssl",
                         variation_slug,
                         f"seed{downstream_seed}",
