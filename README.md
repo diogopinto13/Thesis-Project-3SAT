@@ -68,3 +68,21 @@ Execute the following command to perform evaluation of 3SAT.
 python3 aa_test.py --config-path scripts/aatest/cifar --config-name 3sat.yaml
 ```
 We need to use the  fine-tuned models under different fine-tuning modes for robustness evaluation under Auto-Attack.
+
+Original code link: https://github.com/MengNanFang/3SAT/tree/main
+
+Paper:
+@inproceedings{10.1609/aaai.v39i16.33815,
+author = {Fang, Jiang and He, Haonan and Sun, Jiyan and Fu, Jiadong and Guo, Zhaorui and Liu, Yinlong and Ma, Wei},
+title = {3SAT: a simple self-supervised adversarial training framework},
+year = {2025},
+isbn = {978-1-57735-897-8},
+publisher = {AAAI Press},
+url = {https://doi.org/10.1609/aaai.v39i16.33815},
+doi = {10.1609/aaai.v39i16.33815},
+abstract = {The combination of self-supervised learning and adversarial training (AT) can significantly improve the adversarial robustness of self-supervised models. However, the robustness of self-supervised adversarial training (self-AT) still lags behind that of state-of-the-art (SOTA) supervised AT (sup-AT), even though the performance of current self-supervised learning models has already matched or even surpassed that of SOTA supervised learning models. This issue raises concerns about the secure application of self-supervised learning models. As a result of the incorporation of adversarial training, self-AT becomes a challenging joint optimisation problem. Furthermore, recent studies have shown that the data augmentation methods necessary for constructing positive pairs in self-supervised learning negatively impact the robustness improvement in self-AT. Inspired by this, we propose 3SAT, a simple self-supervised adversarial training framework. 3SAT conducts adversarial training on original, unaugmented samples, reducing the difficulty of optimizing the adversarial training subproblem and fundamentally eliminating the negative impact of data augmentation on robustness improvement. Additionally, 3SAT introduces a dynamic training objective scheduling strategy to address the issue of model training collapse during the joint optimization process when using original samples directly. 3SAT is not only structurally simple and computationally efficient, reducing self-AT training time by half, but it also improves the SOTA self-AT robustness accuracy by 16.19\% and standard accuracy by 11.41\% under Auto-Attack on the CIFAR-10 dataset. Even more impressively, 3SAT surpasses the SOTA sup-AT method in robust accuracy by a significant margin of 11.25\%. This marks the first time that self-AT has outperformed SOTA sup-AT in robustness, indicating that self-AT is a superior method for improving model robustness.},
+booktitle = {Proceedings of the Thirty-Ninth AAAI Conference on Artificial Intelligence and Thirty-Seventh Conference on Innovative Applications of Artificial Intelligence and Fifteenth Symposium on Educational Advances in Artificial Intelligence},
+articleno = {1842},
+numpages = {9},
+series = {AAAI'25/IAAI'25/EAAI'25}
+}
