@@ -23,3 +23,4 @@ dist/
 /trained_models
 /outputs
 solo/__pycache__/
+/experiments
