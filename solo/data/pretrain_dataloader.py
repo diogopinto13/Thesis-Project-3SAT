@@ -181,6 +181,10 @@ def build_transform_pipeline(dataset, cfg):
         crop_size: int
         [OPTIONAL] mean: float
         [OPTIONAL] std: float
+        random_crop:
+            enabled: bool
+            size: int
+            [OPTIONAL] padding: int
         rrc:
             enabled: bool
             crop_min_scale: float
@@ -216,6 +220,15 @@ def build_transform_pipeline(dataset, cfg):
     )
 
     augmentations = []
+    random_crop_cfg = cfg.get("random_crop", None)
+    if random_crop_cfg and random_crop_cfg.get("enabled", False):
+        augmentations.append(
+            transforms.RandomCrop(
+                random_crop_cfg.size,
+                padding=random_crop_cfg.get("padding", 0),
+            ),
+        )
+
     if cfg.rrc.enabled:
         augmentations.append(
             transforms.RandomResizedCrop(

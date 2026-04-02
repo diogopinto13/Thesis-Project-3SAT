@@ -78,22 +78,28 @@ def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
     cifar_pipeline = {
         "T_train": transforms.Compose(
             [
-                transforms.RandomResizedCrop(size=32, scale=(0.08, 1.0)),
+                #to be the same as EvodENSS, for alternative version
+                transforms.RandomCrop(size=32, padding=4),
                 transforms.RandomHorizontalFlip(p=0.5),
-                transforms.RandomApply(
-                    [
-                        transforms.ColorJitter(
-                            brightness=0.4,
-                            contrast=0.4,
-                            saturation=0.4,
-                            hue=0.1,
-                        )
-                    ],
-                    p=0.8,
-                ),
-                transforms.RandomGrayscale(p=0.2),
                 transforms.ToTensor(),
                 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+                #to be the same as EvodENSS, for original 
+                # transforms.RandomResizedCrop(size=32, scale=(0.08, 1.0)),
+                # transforms.RandomHorizontalFlip(p=0.5),
+                # transforms.RandomApply(
+                #     [
+                #         transforms.ColorJitter(
+                #             brightness=0.4,
+                #             contrast=0.4,
+                #             saturation=0.4,
+                #             hue=0.1,
+                #         )
+                #     ],
+                #     p=0.8,
+                # ),
+                # transforms.RandomGrayscale(p=0.2),
+                # transforms.ToTensor(),
+                # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
             ]
         ),
         "T_val": transforms.Compose(

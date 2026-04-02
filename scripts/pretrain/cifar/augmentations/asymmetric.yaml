@@ -2,6 +2,10 @@
     enabled: True
     crop_min_scale: 0.08
     crop_max_scale: 1.0
+  random_crop:
+    enabled: True
+    size: 32
+    padding: 4
   color_jitter:
     prob: 0.8
     brightness: 0.4
@@ -25,6 +29,10 @@
     enabled: True
     crop_min_scale: 0.08
     crop_max_scale: 1.0
+  random_crop:
+    enabled: True
+    size: 32
+    padding: 4
   color_jitter:
     prob: 0.8
     brightness: 0.4
@@ -36,7 +44,7 @@
   gaussian_blur:
     prob: 0.0
   solarization:
-    prob: 0.2
+    prob: 0.0
   equalization:
     prob: 0.0
   horizontal_flip:
