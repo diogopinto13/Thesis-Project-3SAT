@@ -63,3 +63,4 @@ strategy: "ddp"
 precision: "16-mixed"
 
 seed: 0
+adversarial_pretext: True

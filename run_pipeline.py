@@ -15,6 +15,10 @@ class SupervisedStage(enum.Enum):
     TRAIN = "adv_supervised_learning.py"
     EXPORT = "export_model.py"
 
+class PretextVariation(enum.Enum):
+    STANDARD = "adversarial_pretext=False"
+    ADVERSARIAL = "adversarial_pretext=True"
+
 class VariationsStage(enum.Enum):
     PRETEXT_ONLY = ["finetune=False", "adversarial=False"]
     DOWNSTREAM_ADVERSARIAL_FROZEN = ["finetune=False", "adversarial=True"]
@@ -94,6 +98,7 @@ def run_ssl_pipeline(seeds: list[int]):
                         "--config-name",
                         PRETRAIN_CONFIG_NAME,
                         f"seed={pretrain_seed}",
+                        PretextVariation.STANDARD.value,
                     ]
                 )
             )

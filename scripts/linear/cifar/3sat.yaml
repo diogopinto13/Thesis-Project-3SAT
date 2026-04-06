@@ -38,7 +38,7 @@ checkpoint:
 auto_resume:
   enabled: False
 finetune: True
-adversarial: True
+adversarial: False
 
 # overwrite PL stuff
 max_epochs: 1 #30

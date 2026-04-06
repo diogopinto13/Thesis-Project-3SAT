@@ -61,6 +61,7 @@ class SAT(BaseMethod):
         # self.warm_up_stage = 1
         self.mixup_alpha = cfg.adv.mixup_alpha
         self.cluster_centers:torch.Tensor= None
+        self.adv_pretext = omegaconf_select(cfg, "adversarial_pretext", True)
 
         #self.pseudo_classifier: nn.Module = nn.Linear(self.features_dim, self.num_clusters)
         
@@ -255,6 +256,9 @@ class SAT(BaseMethod):
         # barlow twins clean loss
         clean_barlow_loss = barlow_loss_func(z1, z2, lamb=self.lamb, scale_loss=self.scale_loss)
 
+        if not self.adv_pretext:
+            return clean_barlow_loss
+        
         # (same if it were X[2])
         orig_images = X[-1]
         z_orig_images = self.forward(orig_images)["z"].detach()
