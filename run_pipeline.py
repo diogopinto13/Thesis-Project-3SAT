@@ -19,10 +19,15 @@ class PretextVariation(enum.Enum):
     STANDARD = "adversarial_pretext=False"
     ADVERSARIAL = "adversarial_pretext=True"
 
-class VariationsStage(enum.Enum):
-    PRETEXT_ONLY = ["finetune=False", "adversarial=False"]
-    DOWNSTREAM_ADVERSARIAL_FROZEN = ["finetune=False", "adversarial=True"]
-    DOWNSTREAM_ADVERSARIAL_FINETUNE = ["finetune=True", "adversarial=True"]
+class VariationsSSLStage(enum.Enum):
+    #PRETEXT_ONLY = ["finetune=False", "adversarial=False"]
+    #DOWNSTREAM_ADVERSARIAL_FROZEN = ["finetune=False", "adversarial=True"]
+    #DOWNSTREAM_ADVERSARIAL_FINETUNE = ["finetune=True", "adversarial=True"]
+    DOWNSTREAM_CLEAN_FINETUNE = ["finetune=True", "adversarial=False"]
+
+class VariationsSupervisedStage(enum.Enum):
+    STANDARD = ["finetune=True", "adversarial=False"]
+    ADVERSARIAL = ["finetune=True", "adversarial=True"]
 
 EXPERIMENTS_ROOT = "experiments"
 DEFAULT_CONFIG_PATH = "scripts/linear/cifar"
@@ -109,7 +114,7 @@ def run_ssl_pipeline(seeds: list[int]):
             if not pretrain_ckpt:
                 raise Exception("No pretrain checkpoint found after pretraining stage.")
 
-            for variation in VariationsStage:
+            for variation in VariationsSSLStage:
                 variation_slug = variation.name.lower()
                 print(f"Running variation: {variation.name}")
                 # for each fixed backbone, we run the downstream with different seeds
@@ -174,6 +179,7 @@ def run_supervised_pipeline(seeds: list[int]):
         for seed in seeds:
             print(f"Running seed: {seed} / {len(seeds)}")
             train_start = time.time()
+            config_args = " ".join(VariationsSupervisedStage.STANDARD.value)
             run_command(
                 " ".join(
                     [
@@ -184,6 +190,7 @@ def run_supervised_pipeline(seeds: list[int]):
                         "--config-name",
                         DEFAULT_CONFIG_NAME,
                         f"seed={seed}",
+                        config_args,
                     ]
                 )
             )
@@ -219,7 +226,7 @@ def run_supervised_pipeline(seeds: list[int]):
         raise Exception(e)
 
 def main():
-    seeds = [0,1] #[0, 1, 2, 3, 4]
+    seeds = [0,1,2] # [i for i in range(15)]
     print("Starting the pipeline...")
     print("Running self-supervised learning stage...")
     run_ssl_pipeline(seeds)

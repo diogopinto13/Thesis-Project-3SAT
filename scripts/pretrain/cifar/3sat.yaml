@@ -55,7 +55,7 @@ adv:
 #   enabled: True
 
 # overwrite PL stuff
-max_epochs: 1 #20 #1000
+max_epochs: 1000 #20 #1000
 devices: [0]
 sync_batchnorm: True
 accelerator: "gpu"
@@ -63,4 +63,4 @@ strategy: "ddp"
 precision: "16-mixed"
 
 seed: 0
-adversarial_pretext: True
+adversarial_pretext: False
