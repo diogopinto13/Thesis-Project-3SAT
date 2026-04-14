@@ -118,58 +118,59 @@ def run_ssl_pipeline(seeds: list[int]):
                 variation_slug = variation.name.lower()
                 print(f"Running variation: {variation.name}")
                 # for each fixed backbone, we run the downstream with different seeds
-                for downstream_seed in seeds:
-                    print(f"Running seed: {downstream_seed} / {len(seeds)}")
-                    config_args = " ".join(variation.value)
-                    downstream_start = time.time()
-                    run_command(
-                        " ".join(
-                            [
-                                "python3.10",
-                                SSLStage.LINEAR_EVAL.value,
-                                "--config-path",
-                                DEFAULT_CONFIG_PATH,
-                                "--config-name",
-                                DEFAULT_CONFIG_NAME,
-                                f"seed={downstream_seed}",
-                                f"pretrained_feature_extractor={quote_arg(pretrain_ckpt)}",
-                                config_args,
-                            ]
-                        )
+                downstream_seed = pretrain_seed
+                #for downstream_seed in seeds:
+                    #print(f"Running seed: {downstream_seed} / {len(seeds)}")
+                config_args = " ".join(variation.value)
+                downstream_start = time.time()
+                run_command(
+                    " ".join(
+                        [
+                            "python3.10",
+                            SSLStage.LINEAR_EVAL.value,
+                            "--config-path",
+                            DEFAULT_CONFIG_PATH,
+                            "--config-name",
+                            DEFAULT_CONFIG_NAME,
+                            f"seed={downstream_seed}",
+                            f"pretrained_feature_extractor={quote_arg(pretrain_ckpt)}",
+                            config_args,
+                        ]
                     )
+                )
 
-                    downstream_ckpt = find_latest_checkpoint(
-                        "trained_models/**/*.ckpt", created_after=downstream_start
-                    )
-                    if not downstream_ckpt:
-                        raise Exception("No downstream checkpoint found after linear eval.")
+                downstream_ckpt = find_latest_checkpoint(
+                    "trained_models/**/*.ckpt", created_after=downstream_start
+                )
+                if not downstream_ckpt:
+                    raise Exception("No downstream checkpoint found after linear eval.")
 
-                    export_dir = os.path.join(
-                        EXPERIMENTS_ROOT,
-                        f"backbone_seed{pretrain_seed}",
-                        "ssl",
-                        variation_slug,
-                        f"seed{downstream_seed}",
-                    )
-                    ensure_dir(export_dir)
-                    pth_output_path, torchscript_output_path = build_export_paths(export_dir)
+                export_dir = os.path.join(
+                    EXPERIMENTS_ROOT,
+                    f"backbone_seed{pretrain_seed}",
+                    "ssl",
+                    variation_slug,
+                    f"seed{downstream_seed}",
+                )
+                ensure_dir(export_dir)
+                pth_output_path, torchscript_output_path = build_export_paths(export_dir)
 
-                    run_command(
-                        " ".join(
-                            [
-                                "python3.10",
-                                SSLStage.EXPORT.value,
-                                "--config-path",
-                                DEFAULT_CONFIG_PATH,
-                                "--config-name",
-                                DEFAULT_CONFIG_NAME,
-                                f"seed={downstream_seed}",
-                                f"pretrained_feature_extractor={quote_arg(downstream_ckpt)}",
-                                f"+export.pth_output_path={quote_arg(pth_output_path)}",
-                                f"+export.torchscript_output_path={quote_arg(torchscript_output_path)}",
-                            ]
-                        )
+                run_command(
+                    " ".join(
+                        [
+                            "python3.10",
+                            SSLStage.EXPORT.value,
+                            "--config-path",
+                            DEFAULT_CONFIG_PATH,
+                            "--config-name",
+                            DEFAULT_CONFIG_NAME,
+                            f"seed={downstream_seed}",
+                            f"pretrained_feature_extractor={quote_arg(downstream_ckpt)}",
+                            f"+export.pth_output_path={quote_arg(pth_output_path)}",
+                            f"+export.torchscript_output_path={quote_arg(torchscript_output_path)}",
+                        ]
                     )
+                )
     except Exception as e:
         print(f"An error occurred on run_ssl_pipeline: {e}")
         raise Exception(e)

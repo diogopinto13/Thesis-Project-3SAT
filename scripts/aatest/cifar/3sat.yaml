@@ -38,7 +38,7 @@ auto_resume:
 finetune: False
 
 # overwrite PL stuff
-max_epochs: 30 #25
+max_epochs: 25
 devices: [0]
 sync_batchnorm: True
 accelerator: "gpu"
