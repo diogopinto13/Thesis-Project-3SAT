@@ -49,7 +49,7 @@ auto_resume:
   enabled: False
 adv:
   num_clusters: 10
-  warm_up_stage: 5 #300
+  warm_up_stage: 300
   mixup_alpha: 0.5
 # knn_eval:
 #   enabled: True

@@ -22,8 +22,8 @@ class PretextVariation(enum.Enum):
 class VariationsSSLStage(enum.Enum):
     #PRETEXT_ONLY = ["finetune=False", "adversarial=False"]
     #DOWNSTREAM_ADVERSARIAL_FROZEN = ["finetune=False", "adversarial=True"]
-    #DOWNSTREAM_ADVERSARIAL_FINETUNE = ["finetune=True", "adversarial=True"]
-    DOWNSTREAM_CLEAN_FINETUNE = ["finetune=True", "adversarial=False"]
+    DOWNSTREAM_ADVERSARIAL_FINETUNE = ["finetune=True", "adversarial=True"]
+    #DOWNSTREAM_CLEAN_FINETUNE = ["finetune=True", "adversarial=False"]
 
 class VariationsSupervisedStage(enum.Enum):
     STANDARD = ["finetune=True", "adversarial=False"]
@@ -103,7 +103,7 @@ def run_ssl_pipeline(seeds: list[int]):
                         "--config-name",
                         PRETRAIN_CONFIG_NAME,
                         f"seed={pretrain_seed}",
-                        PretextVariation.STANDARD.value,
+                        PretextVariation.ADVERSARIAL.value,
                     ]
                 )
             )
@@ -180,7 +180,7 @@ def run_supervised_pipeline(seeds: list[int]):
         for seed in seeds:
             print(f"Running seed: {seed} / {len(seeds)}")
             train_start = time.time()
-            config_args = " ".join(VariationsSupervisedStage.STANDARD.value)
+            config_args = " ".join(VariationsSupervisedStage.ADVERSARIAL.value)
             run_command(
                 " ".join(
                     [
@@ -227,13 +227,13 @@ def run_supervised_pipeline(seeds: list[int]):
         raise Exception(e)
 
 def main():
-    seeds = [0,1,2] # [i for i in range(15)]
+    seeds = [0]#[0,1,2] # [i for i in range(15)]
     print("Starting the pipeline...")
     print("Running self-supervised learning stage...")
     run_ssl_pipeline(seeds)
 
     print("Running supervised learning stage...")
-    run_supervised_pipeline(seeds)
+    #run_supervised_pipeline(seeds)
 
     print("Pipeline completed successfully")
 
